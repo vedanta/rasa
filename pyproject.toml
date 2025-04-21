@@ -1,0 +1,21 @@
+[project]
+name = "rasa"
+version = "0.1.0"
+description = "Role-Aligned Software Architecture for persona-driven AI agents"
+authors = [{name = "Vedanta Barooah"}]
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "langgraph",
+    "langchain",
+    "PyYAML",
+    "redis",
+    "pydantic"
+]
+
+[tool.setuptools]
+packages = ["rasa"]
+
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"

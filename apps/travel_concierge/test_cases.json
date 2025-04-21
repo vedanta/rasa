@@ -1,0 +1,10 @@
+[
+  {
+    "input": "Suggest a relaxing European city for spring",
+    "preferences": {
+      "season": "spring",
+      "style": "relaxed",
+      "region": "Europe"
+    }
+  }
+]

@@ -1,0 +1,54 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.env
+.venv
+env/
+venv/
+ENV/
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints
+
+# VS Code
+.vscode/
+
+# Logs
+*.log
+
+# macOS
+.DS_Store
+
+# Python dependency files
+poetry.lock
+Pipfile.lock
+
+# Pytest cache
+.pytest_cache/
+
+# Local data or credentials
+*.sqlite3
+data/*.csv
+data/*.json
+*.env
+
+# Ignore .env files as they are usually used to set environment variables
+.env
+.envrc
+# Ignore log files and other output files
+.migration/
+mock_*
+logs/*
+*.*.pid
+.foai/*.pid
+
+# output files
+*.out
+*.err
+*.log
+
+# Ignore backup files
+tests/backup/
