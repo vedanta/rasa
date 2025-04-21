@@ -23,14 +23,13 @@ class Runner:
     def _load_agents(self, agent_names: list, base_cls: type) -> Dict[str, Any]:
         agents = {}
         for name in agent_names:
-            # Infer the import path from naming convention
-            if name.endswith("_frame"):
-                module_path = f"rasa.frames.{name}"
-                class_name = "".join([word.capitalize() for word in name.split("_")])
+            # Special fallback if the agent is domain-specific (not in rasa.operators)
+            if name == "travel_heuristic_agent":
+                module_path = name  # from sys.path (apps domain)
             else:
-                module_path = f"rasa.operators.{name}"
-                class_name = "".join([word.capitalize() for word in name.split("_")])
+                module_path = f"rasa.operators.{name}" if base_cls == OperatorAgent else f"rasa.frames.{name}"
 
+            class_name = "".join([word.capitalize() for word in name.split("_")])
             module = importlib.import_module(module_path)
             cls = getattr(module, class_name)
             if not issubclass(cls, base_cls):
@@ -67,5 +66,9 @@ class Runner:
         """
         Executes the full cognitive flow and returns the final state.
         """
-        return self.graph.invoke(state)
+        # Inject persona domain_operators into metadata
+        metadata = state.get("metadata", {})
+        metadata["domain_operators"] = getattr(self.persona, "domain_operators", [])
+        state["metadata"] = metadata
 
+        return self.graph.invoke(state)

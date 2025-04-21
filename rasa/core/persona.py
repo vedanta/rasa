@@ -8,7 +8,6 @@ from pathlib import Path
 class Persona:
     """
     A Persona defines the identity, behavior, and reasoning flow of a RASA agent.
-    It includes the frame stack, operator agents, tone, memory scope, and metadata.
     """
 
     def __init__(
@@ -20,6 +19,7 @@ class Persona:
         prompt_style: str,
         memory_scope: str,
         metadata: Optional[Dict] = None,
+        domain_operators: Optional[List[str]] = None
     ):
         self.name = name
         self.description = description
@@ -28,6 +28,7 @@ class Persona:
         self.prompt_style = prompt_style
         self.memory_scope = memory_scope
         self.metadata = metadata or {}
+        self.domain_operators = domain_operators or []
 
     @classmethod
     def from_yaml(cls, path: str) -> "Persona":
@@ -41,14 +42,22 @@ class Persona:
         with path.open("r") as f:
             data = yaml.safe_load(f)
 
+        return cls.build(data)
+
+    @classmethod
+    def build(cls, config: dict) -> "Persona":
+        """
+        Build a Persona from a dictionary definition.
+        """
         return cls(
-            name=data.get("name"),
-            description=data.get("description", ""),
-            state_stack=data.get("state_stack", []),
-            operators=data.get("operators", []),
-            prompt_style=data.get("prompt_style", "default"),
-            memory_scope=data.get("memory_scope", "user"),
-            metadata=data.get("metadata", {}),
+            name=config.get("name"),
+            description=config.get("description", ""),
+            state_stack=config.get("state_stack", []),
+            operators=config.get("operators", []),
+            prompt_style=config.get("prompt_style", "default"),
+            memory_scope=config.get("memory_scope", "user"),
+            metadata=config.get("metadata", {}),
+            domain_operators=config.get("domain_operators", [])
         )
 
     def __repr__(self) -> str:

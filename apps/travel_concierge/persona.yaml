@@ -1,15 +1,22 @@
 name: thoughtful_travel_concierge
 description: Warm, narrative-driven agent for personalized travel advice
+
 state_stack:
   - stateless_frame
   - session_frame
   - short_term_frame
+
 operators:
   - preference_agent
-  - travel_heuristic_agent
+  - heuristic_agent
   - tone_formatter
+
+domain_operators:
+  - travel_heuristic_agent
+
 prompt_style: narrative
 memory_scope: user
+
 metadata:
   domain: travel
   tone: friendly
