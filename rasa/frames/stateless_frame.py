@@ -1,14 +1,11 @@
-# Stateless Frame
-# rasa/frames/stateless_frame.py
-
 from typing import Any
 from rasa.core.state import State
 from rasa.core.agent import FrameAgent
-
+from rasa.llm.llm_client import call_llm  # <--- Add this import
 
 class StatelessFrame(FrameAgent):
     """
-    The entry frame that processes raw user input. 
+    The entry frame that processes raw user input.
     Stateless — does not use memory or session context.
     """
 
@@ -21,10 +18,16 @@ class StatelessFrame(FrameAgent):
             return {**state, "output": "I'm not sure what you're asking for."}
 
         # Optionally normalize input, tag, etc.
+
+        # NEW: Call the LLM!
+        llm_response = call_llm(user_input)
+
+        # Optionally enrich context, or just return output directly
         return {
             **state,
             "context": {
                 **state.get("context", {}),
                 "intent": "travel_request"
-            }
+            },
+            "output": llm_response  # Add the LLM's response to the output field!
         }
