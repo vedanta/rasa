@@ -1,11 +1,8 @@
 # 🧠 RASA – Role-Aligned Software Architecture
 
 *Persona-driven, memory-aware AI agents with clear cognitive structure, modularity, and real-world usability.*
-
 ---
-# RASA – Role-Aligned Software Architecture
 
-[![Build Status](https://github.com/vedanta/rasa/actions/workflows/ci.yml/badge.svg)](https://github.com/vedanta/rasa/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 <!-- Uncomment these once your package is on PyPI! -->
