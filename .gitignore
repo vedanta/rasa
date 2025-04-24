@@ -55,3 +55,5 @@ tests/backup/
 
 # notes
 notes/*
+apps/demo_app
+apps/demo_app/*
