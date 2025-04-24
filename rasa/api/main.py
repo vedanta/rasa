@@ -11,6 +11,7 @@ import sys
 sys.path.append("apps/travel_concierge/operators")
 
 from rasa.api import llm
+from rasa.api import status
 
 
 app = FastAPI(
@@ -115,3 +116,4 @@ async def stream_output(req: RASARequest):
 
 # Include the LLM router
 app.include_router(llm.router)
+app.include_router(status.router)

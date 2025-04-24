@@ -27,3 +27,13 @@ def get_llm_info():
         "config": info.get("config"),
         "api_key_present": info.get("api_key_present", False),
     }
+
+@router.get("/llm/health", tags=["llm"], summary="Ping the active LLM and verify it responds")
+def llm_health():
+    from rasa.llm.llm_client import call_llm
+    try:
+        result = call_llm("ping")  # Use a short, harmless prompt
+        healthy = bool(result and isinstance(result, str) and len(result.strip()) > 0)
+    except Exception as e:
+        return {"healthy": False, "error": str(e)}
+    return {"healthy": healthy}
