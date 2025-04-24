@@ -52,3 +52,6 @@ logs/*
 
 # Ignore backup files
 tests/backup/
+
+# notes
+notes/*
