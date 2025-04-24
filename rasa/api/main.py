@@ -1,5 +1,5 @@
 from rasa.version import __version__ as rasa_version
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, APIRouter, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from typing import Optional, Dict, List, Any
@@ -9,6 +9,9 @@ from rasa.core.runner import Runner
 from rasa.core.persona import Persona
 import sys
 sys.path.append("apps/travel_concierge/operators")
+
+from rasa.api import llm
+
 
 app = FastAPI(
     title="RASA API",
@@ -109,3 +112,6 @@ async def stream_output(req: RASARequest):
         return StreamingResponse(word_stream(), media_type="text/plain")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+# Include the LLM router
+app.include_router(llm.router)
