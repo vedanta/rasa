@@ -1,5 +1,36 @@
 # 📦 CHANGELOG
 
+## v0.1.1 – API, Client CLI, and Robust Test Coverage (2025-04-21)
+
+### ✨ Highlights
+
+- Introduced `rasa/api/main.py` – FastAPI backend with endpoints: `/persona`, `/output`, `/output/json`, `/stream`
+- Implemented top-level API client CLI (`client/api_cli.py`) for remote/API usage
+- Added streaming and structured JSON output support to API and CLI
+- Extended local CLI (`rasa/cli/main.py`) with:
+    - List, describe, run commands
+    - Richer inline help, preference docs, and streaming
+- Added extensive pytest coverage for API, CLI, and API-CLI (13+ tests, all passing)
+- CLI and API endpoints now fully documented
+- New `README.md` for CLI usage and extension
+- Improved developer onboarding and DX
+
+---
+
+### 🛠 Improvements
+
+- Persona config (`describe`) now auto-loads domain operator docstrings
+- Easier persona creation and extension patterns
+
+---
+
+### 🧭 Ready for Next
+
+- FRAME_META, introspection, and self-documenting flows
+- LLM operator integration
+- UI and notebook demos
+
+
 ## v0.1.0 – Persona-Driven Cognitive Framework MVP (2025-04-20)
 
 ### ✨ Highlights
