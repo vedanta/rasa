@@ -3,6 +3,16 @@
 *Persona-driven, memory-aware AI agents with clear cognitive structure, modularity, and real-world usability.*
 
 ---
+# RASA – Role-Aligned Software Architecture
+
+[![Build Status](https://github.com/vedanta/rasa/actions/workflows/ci.yml/badge.svg)](https://github.com/vedanta/rasa/actions)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+<!-- Uncomment these once your package is on PyPI! -->
+<!--
+[![PyPI version](https://badge.fury.io/py/rasa-framework.svg)](https://badge.fury.io/py/rasa-framework)
+[![Python Versions](https://img.shields.io/pypi/pyversions/rasa-framework.svg)](https://pypi.org/project/rasa-framework/)
+-->
 
 ## 🚀 Project Overview
 
