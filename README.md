@@ -1,155 +1,173 @@
-# 🧠 RASA – Role-Aligned Software Architecture
+# RASA – Role-Aligned Software Architecture
 
-*Persona-driven, memory-aware AI agents with clear cognitive structure, modularity, and real-world usability.*
----
-
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-
-<!-- Uncomment these once your package is on PyPI! -->
-<!--
-[![PyPI version](https://badge.fury.io/py/rasa-framework.svg)](https://badge.fury.io/py/rasa-framework)
-[![Python Versions](https://img.shields.io/pypi/pyversions/rasa-framework.svg)](https://pypi.org/project/rasa-framework/)
--->
-
-## 🚀 Project Overview
-
-RASA is a Python framework for building **persona-based AI agents** that combine modular cognitive “frames,” memory layers, explicit reasoning operators, and plug-and-play interfaces.  
-Inspired by modern LLM agent stacks and production experience, RASA helps you:
-
-- Encode agent identity, behavior, and reasoning flow (personas)
-- Compose workflows using frames (stateless, session, short_term, long_term, etc.)
-- Integrate operator logic (preference_agent, heuristic_agent, tone_formatter, LLM tools)
-- Plug in memory (Redis, VectorDB) and tools as needed
-- Deploy as CLI, API, or in any Python environment
+**Persona-Driven, Memory-Integrated AI Framework**
 
 ---
 
-## 🏗️ Architecture
+## 🚀 What is RASA?
 
-### 🧩 Key Concepts
+RASA is a modular Python framework for building advanced, persona-driven, memory-aware AI agents.  
+With RASA, you can create agents with unique behaviors, multi-layered memory, and domain-specific reasoning—either as APIs or directly in your own Python workflows.
 
-- **Frames:**  
-  Cognitive state steps (stateless, session, short_term, long_term) executed via LangGraph
-- **Operators:**  
-  Reasoning/action units (preference_agent, heuristic_agent, tone_formatter, LLM tools)
-- **Personas:**  
-  Configurations defining agent identity, tone, cognitive flow, and domain tools (`persona.yaml`)
-- **Memory:**  
-  Session/short-term via Redis, long-term via VectorDB (future-ready)
-- **LLM Adapter:**  
-  Pluggable interface for OpenAI, Ollama, Claude, etc. (planned)
+- **Persona-based:** Define rich agent "personas" in YAML—each with their own frames (cognitive layers), operators (reasoning tools), and metadata.
+- **Memory-integrated:** Support for short-term, session, and long-term memory (vector DB, Redis, etc.).
+- **Flexible interfaces:** Use via a FastAPI server, a powerful CLI, or directly as a Python library.
+- **Extensible:** Add new personas, frames, and operators in a few lines.
 
 ---
 
-### 🗂️ Directory Structure
+## 📁 Project Structure
 
 ```
 rasa/
-  ├── core/         # BaseAgent, FrameAgent, OperatorAgent, Runner, Persona, State
-  ├── frames/       # Stateless, Session, ShortTerm, (LongTerm) frame modules
-  ├── operators/    # General operators: preference, heuristic, tone, etc.
-  ├── api/          # FastAPI backend (serves personas as an API)
-  ├── cli/          # Local CLI for direct persona execution
+  core/           # Core library: runners, base agents, memory, etc.
+  api/            # FastAPI application and endpoints
+clients/
+  rasa.py         # Unified CLI for direct and API usage
 apps/
-  ├── travel_concierge/     # Example persona (travel recommendations)
-  ├── economist_advisor/    # Example persona (economics explainer)
-client/
-  └── api_cli.py    # API-based CLI client (calls FastAPI endpoints)
+  <persona_name>/
+    persona.yaml  # Persona definition
+    frames/       # Custom frames for this persona
+    operators/    # Custom operators for this persona
 tests/
-  └── ...           # Pytest test suite for core, CLI, API, client
+  ...             # Pytest suite (API, CLI, persona, frame/operator tests)
+README.md         # (You are here)
 ```
 
 ---
 
-## 💻 Local Setup
+## ⚡ Quick Start
 
-### 1. Clone the repo and install dependencies
+### 1. **Clone & Install**
 
 ```bash
-git clone <repo-url>
+git clone https://github.com/your-org/rasa.git
 cd rasa
-conda create -n rasa python=3.10 -y
-conda activate rasa
+pip install -e .    # Optional, but recommended for dev
 pip install -r requirements.txt
 ```
 
-### 2. Run the CLI
-
-```bash
-python -m rasa.cli.main list
-python -m rasa.cli.main describe --persona travel_concierge
-python -m rasa.cli.main run --persona travel_concierge --input "Plan a weekend in Italy" --preferences region=europe --preferences season=spring
-```
-
-### 3. Run the API server
+### 2. **Run the API**
 
 ```bash
 uvicorn rasa.api.main:app --reload
-# Visit http://localhost:8000/docs for interactive Swagger UI
 ```
 
-### 4. Use the API Client CLI
+- By default, runs at http://localhost:8000
 
-```bash
-python client/api_cli.py list
-python client/api_cli.py run --persona travel_concierge --input "..." --preferences region=europe
-```
+### 3. **Try the CLI**
 
-### 5. Run all tests
+- List personas:
+  ```bash
+  python -m clients.rasa list
+  ```
 
-```bash
-pytest tests/ -v
-```
+- Run a persona (direct):
+  ```bash
+  python -m clients.rasa run --persona strategic_stock_analyst --input "Should I buy Nvidia today?"
+  ```
 
----
+- Run via API:
+  ```bash
+  python -m clients.rasa --mode api run --persona travel_concierge --input "Best city in Europe for food?"
+  ```
 
-## 👥 Audience
-
-- **End Users:**  
-  Use RASA as a ready-made chatbot, API service, or CLI persona engine.  
-  No coding required—just run and configure via persona YAML files.
-- **Developers / Researchers:**  
-  Build new personas, extend frames/operators, connect memory, or plug in new LLMs/tools.
-  All core interfaces are designed for extension and introspection.
-
----
-
-## 🧑‍💻 **Developer Onboarding**
-
-1. **Explore sample personas in `apps/`**
-    - See how `persona.yaml` wires frames, operators, and tone
-
-2. **Run the CLI and API**
-    - Try `python -m rasa.cli.main list`
-    - Start API with `uvicorn rasa.api.main:app --reload`
-
-3. **Develop & Test**
-    - Add new frames/operators with docstrings and `FRAME_META`
-    - Add to test suite in `tests/`
-    - Regenerate docs and diagrams as your pipeline grows
-
-4. **Contribute**
-    - All new frames/operators should document their contract via `FRAME_META` for self-documenting code and tools
+- Get full CLI help:
+  ```bash
+  python -m clients.rasa --help
+  ```
 
 ---
 
-## 🌟 **Why RASA?**
+## 👤 Adding Personas
 
-- Clear, explicit cognitive structure: code and docs are always in sync
-- Persona-first: modular, configurable, and human-aligned
-- Fully testable and ready for production integration (API, CLI, notebooks, or UI)
-- Designed for LLM integration, memory, and team collaboration from day one
+1. **Create a new app folder:**
+   ```
+   apps/my_persona/
+   ```
+
+2. **Write a persona YAML:**
+   ```
+   apps/my_persona/persona.yaml
+   ```
+   (See [Persona.md](apps/my_persona/persona.yaml) or sample personas for reference.)
+
+3. **Add custom frames/operators as needed:**
+   ```
+   apps/my_persona/frames/my_custom_frame.py
+   apps/my_persona/operators/my_operator.py
+   ```
+
+4. **Test:**
+   - Use the CLI:  
+     `python -m clients.rasa run --persona my_persona --input "Try me!"`
+   - Or call via the API.
 
 ---
 
-## 📚 **See Also**
+## 🧪 Testing
 
-- [CLI README](./rasa/cli/README.md)
-- [CHANGELOG](./CHANGELOG.md)
-- [API docs (Swagger UI)](http://localhost:8000/docs) – when running locally
+- **API tests:**
+  ```
+  pytest tests/test_api_master.py -s
+  ```
+
+- **CLI tests:**
+  ```
+  pytest tests/test_cli_end_to_end.py -s
+  ```
+
+- **Direct Python tests:** (for core/frame/operator logic)
+  ```
+  pytest
+  ```
 
 ---
 
-**Build AI agents that think, remember, and explain—just like your organization.**
+## 🛠️ Advanced Usage
 
-*Ready to explore or contribute? Start with the CLI or API, and check out the sample personas!*
+- **Stream responses:**  
+  Add `--stream` to CLI run command for word-by-word output.
+- **Use preferences:**  
+  Pass `--preferences key=value` multiple times.
+- **Get JSON output:**  
+  Use `run-json` in API mode for structured responses.
+
+---
+
+## 🛡️ Troubleshooting
+
+- **Imports fail / ModuleNotFoundError:**  
+  Ensure you run from the project root, and `rasa/`, `clients/` have `__init__.py`.
+- **API not responding:**  
+  Make sure you started with `uvicorn rasa.api.main:app --reload` and port matches `--api-url`.
+- **Persona not found:**  
+  Ensure your `apps/<persona>/persona.yaml` exists and is valid YAML.
+- **LLM issues:**  
+  Check `llm.py` and API health endpoints (`llm-info`, `llm-health`).
+
+---
+
+## 🤝 Contributing
+
+- Open a PR or issue for bugs, ideas, or improvements!
+- Add new personas, operators, or frames by following the established folder structure.
+- Write tests for new logic or personas.
+- Document your persona YAML with field descriptions.
+
+---
+
+## 📚 Reference & Help
+
+- CLI Help:  
+  `python -m clients.rasa --help`
+- API Docs:  
+  http://localhost:8000/docs (when running)
+- Persona spec:  
+  [Persona.md](apps/sample_persona/persona.yaml) (or see `clients/README_CLI.md`)
+- For advanced or team onboarding, see [ARCHITECTURE.md](ARCHITECTURE.md) and code comments.
+
+---
+
+**RASA empowers you to build, test, and operate real-world, context-aware AI agents—fast.  
+Get started, explore, and make it your own!**
