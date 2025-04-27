@@ -126,6 +126,7 @@ All major endpoints and flows are covered with rich debug output.
 ## 🔗 Key Documents & Resources
 
 - [ARCHITECTURE.md](./ARCHITECTURE.md) — Detailed architecture and flow diagrams
+- [PERSONA_DESIGN.md](./PERSONA_DESIGN.md) - Walkthrough deepdive of how personas are designed
 - [./clients/README.md](./clients/README.md) — CLI usage and switches
 - [./apps/PERSONA](./apps/PERSONA.md) — Persona YAML schema and examples
 - [./apps/README.md](./apps/README.md) — Persona/app design, best practices
