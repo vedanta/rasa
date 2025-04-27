@@ -1,5 +1,7 @@
 
-# RASA Deep Dive: The Strategic Stock Analyst (SSA) Persona
+# PERSONA_DESIGN.md
+
+# RASA Persona Reasoning Flow – Developer Reference
 
 ---
 
@@ -36,115 +38,176 @@ metadata:
 
 ---
 
-## 1️⃣ High-Level Flow: RASA SSA Persona
+## 1️⃣ High-Level Non-Linear Flow (SSA Persona)
 
 ```mermaid
 flowchart TD
-    A[User Input, Preferences] --> B(Persona Loader<br>YAML)
+    A[User Input / Preferences] --> B(Persona Loader)
     B --> C(Runner)
     C --> D1(Stateless Frame)
-    D1 --> D2(Session Frame)
-    D2 --> D3(Short Term Frame)
-    D3 --> D4(Long Term Frame)
-    D4 --> E1(Preference Agent)
-    E1 --> E2(Critic Agent)
-    E2 --> E3(Explain Operator)
-    E3 --> E4(Alt Recommendation Operator)
-    E4 --> F(LLM Adapter)
-    F --> G(Output Stream)
-    G --> H[User]
+    C --> D2(Session Frame)
+    C --> D3(Short Term Frame)
+    C --> D4(Long Term Frame)
+    D1 --> E
+    D2 --> E
+    D3 --> E
+    D4 --> E
+    E(Operators Layer) --> F(LLM Adapter)
+    F --> G[Output Stream / API / CLI]
+    G --> H[User, Feedback/HITL]
+    H -.-> B
 ```
 
 **Explanation:**
-- Each box represents a frame (cognitive layer) or operator (reasoning tool).
-- The flow moves left-to-right: input is progressively shaped and enriched before reaching the LLM.
-- The output is delivered to the user, streaming if enabled.
+- The Runner can send state to any frame (not strictly sequential).
+- All frames can invoke the operators layer.
+- Operators are the reasoning "toolbox" and call the LLM as needed.
+- User, HITL, or feedback can re-enter the flow at the Persona Loader or Runner.
 
 ---
 
-## 2️⃣ Deep Dive: Advanced Orchestration with LLM, HITL, and Tools
+## 2️⃣ Detailed Nonlinear Deep-Dive Flow
 
 ```mermaid
 flowchart TD
-    subgraph UserInteraction
-        A1[User Input/Preferences]
-        A2[HITL Feedback (optional)]
+    A[User Input / Preferences]
+    B(Persona Loader<br>YAML)
+    C(Runner)
+
+    %% Frames
+    subgraph Frames
+        F1(Stateless Frame)
+        F2(Session Frame)
+        F3(Short Term Frame)
+        F4(Long Term Frame)
     end
 
-    subgraph PersonaStack
-        B1(Persona Loader)
-        B2(Runner)
-        B3(Stateless Frame)
-        B4(Session Frame)
-        B5(Short Term Frame)
-        B6(Long Term Frame)
-    end
-
+    %% Operators
     subgraph Operators
-        C1(Preference Agent)
-        C2(Critic Agent)
-        C3(Explain Operator)
-        C4(Alt Recommendation Operator)
-        C5[Tool Invocation (APIs, DB)]
+        O1(Preference Agent)
+        O2(Critic Agent)
+        O3(Explain Operator)
+        O4(Alt Recommendation Operator)
+        O5[Tool/External API]
+        O6[HITL / Feedback]
     end
 
-    subgraph LLM
-        D1[LLM Adapter<br>(Ollama, OpenAI, etc.)]
-        D2[LLM Response]
-    end
+    %% LLM
+    LLM(LLM Adapter<br>(Ollama, OpenAI, ...))
 
-    subgraph PostProcessing
-        E1[Output Stream]
-    end
+    %% Outputs
+    Output(Output Stream / API / CLI)
 
-    A1 --> B1
-    B1 --> B2
-    B2 --> B3
-    B3 --> B4
-    B4 --> B5
-    B5 --> B6
+    %% Linear flow
+    A --> B --> C
+    C --> F1
+    F1 --> F2
+    F2 --> F3
+    F3 --> F4
 
-    B6 --> C1
-    C1 --> C5
-    C5 --> C2
-    C2 --> C3
-    C3 --> C4
-    C4 --> D1
+    %% Frames can invoke operators, LLM, tools, or HITL
+    F1 -- Frame Logic --> O1
+    F2 -- Preference & Context --> O2
+    F3 -- State/Context --> O3
+    F4 -- Memory Query --> O4
 
-    D1 --> D2
-    D2 --> C2
+    %% Operators can call LLM, tools, or each other
+    O1 -- Get User Prefs --> LLM
+    O1 -- Needs Data --> O5
+    O2 -- Critique LLM --> LLM
+    O3 -- Explain/Justify --> LLM
+    O4 -- Find Alternatives --> O5
+    O2 -- Human Review? --> O6
+    O3 -- Human Review? --> O6
+    O4 -- Final Output? --> LLM
 
-    D2 --> E1
-    E1 --> A1
+    %% LLM outputs can be fed back into operators, or passed to Output
+    LLM -- LLM Response --> O2
+    LLM -- LLM Response --> O3
+    LLM -- LLM Response --> O4
+    LLM -- Final Output --> Output
 
-    A2 --> B2
+    %% HITL and tools can redirect flow
+    O6 -- Correction/Feedback --> F3
+    O5 -- Data/Insight --> O1
+
+    %% Output can lead to user feedback
+    Output -- User Followup --> A
 ```
 
-**Deep Dive Explanation:**
-- **HITL (Human-in-the-Loop):** User feedback or overrides can flow back into the Runner for correction, re-prompting, or validation before final output.
-- **Tools Layer:** `Tool Invocation` enables access to external APIs (e.g., Yahoo Finance) or databases. Tools can be called by operators as needed for richer, up-to-date information.
-- **LLM Adapter:** Handles the prompt sent to the LLM provider (Ollama, OpenAI, etc.), abstracts away backend-specific logic.
-- **LLM Response Loop:** Output can be reviewed by the Critic Agent, which may re-enter the LLM loop for refinement or further explanation.
-- **Streaming:** Final output is delivered to the user, supporting real-time interaction.
+---
+
+## 📝 **Step-by-Step Reasoning Flow (with Branches & Feedback)**
+
+### 1. **User Input / Preferences**
+- User submits a query and optionally detailed preferences (risk, sector, goals, etc).
+- Input is routed through API or CLI to the persona system.
+
+### 2. **Persona Loader & Runner**
+- Loads persona YAML (frames, operators, metadata).
+- Runner creates the agent stack—frames, operators, tool links.
+
+### 3. **Frames (Cognitive Layers)**
+- **Stateless Frame:** Initial logic or prompt.
+- **Session Frame:** Conversational context; can invoke operators.
+- **Short Term Frame:** Aggregates state; invokes operators, tools, memory.
+- **Long Term Frame:** Persistent memory, can influence prompt or operators.
+
+**Nonlinear:**  
+Any frame can:
+  - Call operators, tools, LLM, or HITL
+  - Pass state to any next frame or loop back for feedback
+
+### 4. **Operators (Reasoning Tools)**
+- **Preference Agent:** Enforces preferences, may call LLM or tools.
+- **Critic Agent:** Reviews LLM output, may trigger HITL or re-prompt.
+- **Explain Operator:** Adds justification (calls LLM, pulls memory).
+- **Alt Recommendation Operator:** Finds alternatives (chains tools, LLMs).
+
+**Operators can:**
+  - Call LLM/tools/other operators
+  - Pass output for HITL review
+
+### 5. **LLM Adapter**
+- Handles context-enriched prompts, can be invoked multiple times in a flow.
+- Sends queries to LLM provider.
+- Outputs go to operators or final output.
+
+### 6. **Tool/External API Layer**
+- Invoked for real-time data (finance, news, etc).
+- Results flow back into frames, operators, or LLM prompt context.
+
+### 7. **HITL (Human-in-the-Loop) Feedback**
+- Can occur post-operator, post-LLM, pre-output, or as direct user feedback.
+- May cause correction, clarification, or re-processing.
+
+### 8. **Output**
+- The final, fully processed response returns to user (CLI, API, or stream).
+- User follow-ups can trigger new flows with session/long-term memory.
 
 ---
 
-## 🧠 Developer Notes
+## 🔄 **Why This Design?**
 
-- **Persona Loader** parses the YAML and assembles the full stack (frames, operators, tools).
-- **Runner** is the orchestrator, routing state and input through frames and invoking operators in order.
-- **Frames** represent different memory and context layers. Each one can update or pass along "state".
-- **Operators** act as reasoning steps and may call out to tools or external APIs.
-- **LLM Adapter** manages prompt formatting, sending, and parsing LLM results.
-- **HITL** enables robust QA, safety, or regulatory review before output—planned as part of the RASA design direction.
+- **Branching, non-linear:** No single path—frames, operators, tools, and LLM interact as needed.
+- **Composable reasoning:** New tools, operators, feedback, or frames can be inserted with minimal code changes.
+- **Modular extensibility:** Plug in new frames, swap LLM adapters, new APIs, or HITL policies.
 
 ---
 
-## 🚦 Current State & Aspirational Design
+## 🧑‍💻 **Developer Guidance**
 
-**This is the final architecture we aspire to fully realize with RASA.**
-- Some components (e.g., full vector memory, multi-round HITL, advanced tool orchestration) may be in-progress or partially implemented.
-- The design emphasizes maximum modularity and clarity for future contributors.
+- Write frames/operators as stateless, composable functions or classes.
+- Use explicit state passing (dict/object) between steps.
+- Document when/how each block is expected to call tools, LLM, or HITL.
+- Use persona YAML as the orchestration/config layer for logic.
+
+---
+
+## ⚡ **Final Design Aspiration**
+
+- This flow is the **blueprint for RASA**—complex feedback, HITL, and advanced tool orchestration may be partial or in-progress.
+- The aim: a robust, extensible, real-world agent framework for enterprise and domain reasoning.
 
 ---
 
@@ -159,6 +222,6 @@ flowchart TD
 
 ---
 
-*RASA: Building agents that reason, remember, and adapt—aligned with your real-world roles and domains.*
+*RASA: Building AI agents that reason, remember, adapt, and integrate human judgment—aligned with your real-world roles and needs.*
 
 ---
