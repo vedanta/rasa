@@ -85,7 +85,7 @@ python -m clients.rasa run --persona travel_concierge --input "Suggest a scenic 
 
 ---
 
-## 👤 Adding Personas (Developers)
+## 👤 Adding Personas
 
 1. **Create a new folder:**
    ```
@@ -127,8 +127,8 @@ All major endpoints and flows are covered with rich debug output.
 
 - [ARCHITECTURE.md](./ARCHITECTURE.md) — Detailed architecture and flow diagrams
 - [./clients/README.md](./clients/README.md) — CLI usage and switches
+- [./apps/PERSONA](./apps/PERSONA.md) — Persona YAML schema and examples
 - [./apps/README.md](./apps/README.md) — Persona/app design, best practices
-- [./apps/PERSONA.md](./apps/PERSONA.md) — Persona YAML schema and examples
 - [./rasa/llm/LLM_CONFIG.md](./rasa/llm/LLM_CONFIG.md) — LLM config and adapters
 - [CHANGELOG.md](./CHANGELOG.md) — Version history and recent changes
 
