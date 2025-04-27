@@ -52,8 +52,13 @@ logs/*
 
 # Ignore backup files
 tests/backup/
+*.zip
+*.tar.gz
+*.tar
+
 
 # notes
 notes/*
 apps/demo_app
 apps/demo_app/*
+
