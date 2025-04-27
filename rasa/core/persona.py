@@ -4,7 +4,6 @@ import yaml
 from typing import List, Dict, Optional
 from pathlib import Path
 
-
 class Persona:
     """
     A Persona defines the identity, behavior, and reasoning flow of a RASA agent.
@@ -23,12 +22,17 @@ class Persona:
     ):
         self.name = name
         self.description = description
-        self.state_stack = state_stack
+        self.state_stack = state_stack  # Internally, this is now 'frames'
         self.operators = operators
         self.prompt_style = prompt_style
         self.memory_scope = memory_scope
         self.metadata = metadata or {}
         self.domain_operators = domain_operators or []
+
+    @property
+    def frames(self):
+        """Always access frames via this property for code clarity."""
+        return self.state_stack
 
     @classmethod
     def from_yaml(cls, path: str) -> "Persona":
@@ -48,11 +52,14 @@ class Persona:
     def build(cls, config: dict) -> "Persona":
         """
         Build a Persona from a dictionary definition.
+        Prefer `frames`, but fall back to `state_stack` for backward compatibility.
         """
+        # Prefer frames if available
+        frames = config.get("frames", config.get("state_stack", []))
         return cls(
             name=config.get("name"),
             description=config.get("description", ""),
-            state_stack=config.get("state_stack", []),
+            state_stack=frames,
             operators=config.get("operators", []),
             prompt_style=config.get("prompt_style", "default"),
             memory_scope=config.get("memory_scope", "user"),
@@ -61,4 +68,4 @@ class Persona:
         )
 
     def __repr__(self) -> str:
-        return f"<Persona {self.name} | frames: {len(self.state_stack)} ops: {len(self.operators)}>"
+        return f"<Persona {self.name} | frames: {len(self.frames)} ops: {len(self.operators)}>"

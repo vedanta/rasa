@@ -1,5 +1,5 @@
 from rasa.version import __version__ as rasa_version
-from fastapi import FastAPI, HTTPException, APIRouter, Request
+from fastapi import FastAPI, HTTPException, APIRouter, Request, status
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from typing import Optional, Dict, List, Any
@@ -11,8 +11,7 @@ import sys
 sys.path.append("apps/travel_concierge/operators")
 
 from rasa.api import llm
-from rasa.api import status
-
+from rasa.api import status as status_router
 
 app = FastAPI(
     title="RASA API",
@@ -45,9 +44,27 @@ def get_personas():
 
 @app.post("/output", response_model=OutputResponse, tags=["Core"])
 def get_output(req: RASARequest):
-    """Run the full persona cognitive flow and return plain output."""
+    # Validate persona and input
+    if not req.persona or not req.persona.strip():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Missing or empty 'persona' parameter. Please specify a valid persona name."
+        )
+    if not req.input or not req.input.strip():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Missing or empty 'input' parameter. Please provide user input text."
+        )
+
     try:
-        persona = Persona.from_yaml(f"apps/{req.persona}/persona.yaml")
+        persona_path = f"apps/{req.persona}/persona.yaml"
+        if not Path(persona_path).exists():
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Persona '{req.persona}' not found. Please check available personas."
+            )
+
+        persona = Persona.from_yaml(persona_path)
         runner = Runner(persona)
         state = {
             "user_input": req.input,
@@ -60,14 +77,34 @@ def get_output(req: RASARequest):
         }
         result = runner.run(state)
         return {"output": result.get("output", "")}
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/output/json", response_model=OutputJSONResponse, tags=["Core"])
 def get_output_json(req: RASARequest):
-    """Return output and any structured JSON output with metadata."""
+    # Validate persona and input
+    if not req.persona or not req.persona.strip():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Missing or empty 'persona' parameter. Please specify a valid persona name."
+        )
+    if not req.input or not req.input.strip():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Missing or empty 'input' parameter. Please provide user input text."
+        )
+
     try:
-        persona = Persona.from_yaml(f"apps/{req.persona}/persona.yaml")
+        persona_path = f"apps/{req.persona}/persona.yaml"
+        if not Path(persona_path).exists():
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Persona '{req.persona}' not found. Please check available personas."
+            )
+
+        persona = Persona.from_yaml(persona_path)
         runner = Runner(persona)
         state = {
             "user_input": req.input,
@@ -84,17 +121,34 @@ def get_output_json(req: RASARequest):
             "output_json": result.get("output_json", []),
             "metadata": result.get("metadata", {})
         }
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/stream", tags=["Core"])
 async def stream_output(req: RASARequest):
-    """
-    Stream output tokens for real-time consumption (useful for chat UIs or CLI).
-    This version streams by words, simulating LLM token output.
-    """
+    # Validate persona and input
+    if not req.persona or not req.persona.strip():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Missing or empty 'persona' parameter. Please specify a valid persona name."
+        )
+    if not req.input or not req.input.strip():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Missing or empty 'input' parameter. Please provide user input text."
+        )
+
     try:
-        persona = Persona.from_yaml(f"apps/{req.persona}/persona.yaml")
+        persona_path = f"apps/{req.persona}/persona.yaml"
+        if not Path(persona_path).exists():
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Persona '{req.persona}' not found. Please check available personas."
+            )
+
+        persona = Persona.from_yaml(persona_path)
         runner = Runner(persona)
         state = {
             "user_input": req.input,
@@ -107,13 +161,16 @@ async def stream_output(req: RASARequest):
         }
         result = runner.run(state)
         output = result.get("output", "")
+
         async def word_stream():
             for word in output.split():
                 yield word + " "
         return StreamingResponse(word_stream(), media_type="text/plain")
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# Include the LLM router
+# Include routers for LLM and status
 app.include_router(llm.router)
-app.include_router(status.router)
+app.include_router(status_router.router)

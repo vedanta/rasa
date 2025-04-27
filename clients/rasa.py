@@ -4,18 +4,19 @@ import sys
 from pathlib import Path
 import requests
 
-# Import RASA core logic only if needed (for direct mode)
+# ------------------------
+# Dynamic Core Imports (for direct mode)
 def try_import_runner():
     try:
         from rasa.core.runner import Runner
         from rasa.core.persona import Persona
         return Runner, Persona
     except ImportError as e:
-        click.echo(f"Error: Could not import RASA core. {e}")
+        click.secho(f"Error: Could not import RASA core. {e}", fg="red")
         sys.exit(1)
 
-API_URL = "http://localhost:8000"  # You may want to allow override via --api-url in the future
-
+# ------------------------
+# Helpers
 def parse_preferences(prefs_list):
     prefs = {}
     for item in prefs_list or []:
@@ -24,6 +25,8 @@ def parse_preferences(prefs_list):
             prefs[k.strip()] = v.strip()
     return prefs
 
+# ------------------------
+# CLI
 @click.group(
     context_settings=dict(help_option_names=["-h", "--help"]),
     help="""
@@ -31,43 +34,35 @@ RASA CLI – Unified interface for persona-driven, memory-aware agents.
 
 Supports both direct (local Python) and API (HTTP) operation.
 
-Global Options:
-  --mode [direct|api]  Run mode: direct (local/in-process) or api (HTTP). Default: direct.
-
-Commands:
-  list       List all available personas.
-  describe   Show persona config and instructions.
-  run        Run a persona with user input and preferences.
-  run-json   (API mode only) Run a persona and get JSON-structured output.
-  llm-info   Show LLM provider/model config from API.
-  llm-health Health check for LLM (API only).
-  status     API server status.
+Default mode: direct. Use --mode api to talk to a RASA API server.
 
 Examples:
-  python -m clients.main --mode direct list
-  python -m clients.main --mode direct run --persona demo_app --input "Suggest a weekend trip"
-  python -m clients.main --mode api run --persona demo_app --input "Suggest a weekend trip"
-  python -m clients.main --mode api run-json --persona demo_app --input "Trip ideas for art lovers"
-  python -m clients.main --mode api llm-info
-  python -m clients.main --mode api llm-health
-  python -m clients.main --mode api status
+  python -m clients.rasa list
+  python -m clients.rasa describe --persona travel_concierge
+  python -m clients.rasa run --persona travel_concierge --input "Suggest a weekend trip"
+  python -m clients.rasa --mode api --api-url http://localhost:8000 run --persona travel_concierge --input "Trip for foodies in India"
+  python -m clients.rasa --mode api run-json --persona travel_concierge --input "Trip for nature lovers"
 """
 )
-@click.option('--mode', type=click.Choice(['direct', 'api']), default='direct', help='Run mode: direct (local) or api (HTTP).')
+@click.option('--mode', type=click.Choice(['direct', 'api']), default='direct', show_default=True, help='Run mode: direct (local) or api (HTTP).')
+@click.option('--api-url', default='http://localhost:8000', show_default=True, help='Base URL for RASA API server (API mode only).')
 @click.pass_context
-def cli(ctx, mode):
+def cli(ctx, mode, api_url):
     ctx.ensure_object(dict)
     ctx.obj["mode"] = mode
+    ctx.obj["api_url"] = api_url
 
-@cli.command("list", help="List all available personas (folders in apps/).")
+# ------------------------
+@cli.command("list", help="List all available personas.")
 @click.pass_context
 def list_command(ctx):
+    """List personas in apps/ (direct) or from API."""
     if ctx.obj["mode"] == "api":
         try:
-            resp = requests.get(f"{API_URL}/persona")
+            resp = requests.get(f"{ctx.obj['api_url']}/persona")
             resp.raise_for_status()
             personas = resp.json().get("personas", [])
-            click.echo("\nAvailable personas:")
+            click.secho("\nAvailable personas:", fg="cyan")
             for p in personas:
                 click.echo(f" - {p}")
         except Exception as e:
@@ -75,35 +70,37 @@ def list_command(ctx):
     else:
         apps_path = Path("apps")
         personas = [d.name for d in apps_path.iterdir() if (d / "persona.yaml").exists()]
-        click.echo("\nAvailable personas:")
+        click.secho("\nAvailable personas:", fg="cyan")
         for p in personas:
             click.echo(f" - {p}")
 
-@cli.command("describe", help="Describe a persona's configuration, operators, and options.")
-@click.option('--persona', required=True, help="Persona name (folder under apps/ or persona YAML path).")
+# ------------------------
+@cli.command("describe", help="Show persona config, frames, operators, and metadata.")
+@click.option('--persona', required=True, help="Persona name (folder in apps/ or path to persona YAML).")
 @click.pass_context
 def describe(ctx, persona):
     persona_path = Path(persona)
     if ctx.obj["mode"] == "api":
-        click.secho("API mode for describe is not yet implemented.", fg="yellow")
+        click.secho("Describe is not yet implemented in API mode.", fg="yellow")
+        return
+    Runner, Persona = try_import_runner()
+    if persona_path.exists() and persona_path.suffix == ".yaml":
+        persona_obj = Persona.from_yaml(str(persona_path))
     else:
-        Runner, Persona = try_import_runner()
-        if persona_path.exists() and persona_path.suffix == ".yaml":
-            persona_obj = Persona.from_yaml(str(persona_path))
-        else:
-            persona_obj = Persona.from_yaml(f"apps/{persona}/persona.yaml")
-        click.secho(f"\nPersona: {persona_obj.name}\n", fg="cyan", bold=True)
-        click.echo(f"Description: {getattr(persona_obj, 'description', 'N/A')}")
-        click.echo(f"Prompt Style: {getattr(persona_obj, 'prompt_style', 'N/A')}")
-        click.echo(f"Frames/State Stack: {getattr(persona_obj, 'frames', getattr(persona_obj, 'state_stack', []))}")
-        click.echo(f"Operators: {getattr(persona_obj, 'operators', [])}")
-        click.echo(f"Domain Operators: {getattr(persona_obj, 'domain_operators', [])}")
-        click.echo(f"Metadata: {getattr(persona_obj, 'metadata', {})}")
+        persona_obj = Persona.from_yaml(f"apps/{persona}/persona.yaml")
+    click.secho(f"\nPersona: {persona_obj.name}", fg="cyan", bold=True)
+    click.echo(f"Description: {getattr(persona_obj, 'description', 'N/A')}")
+    click.echo(f"Prompt Style: {getattr(persona_obj, 'prompt_style', 'N/A')}")
+    click.echo(f"Frames: {getattr(persona_obj, 'frames', getattr(persona_obj, 'state_stack', []))}")
+    click.echo(f"Operators: {getattr(persona_obj, 'operators', [])}")
+    click.echo(f"Domain Operators: {getattr(persona_obj, 'domain_operators', [])}")
+    click.echo(f"Metadata: {getattr(persona_obj, 'metadata', {})}")
 
-@cli.command("run", help="Run a persona-driven agent on user input (and preferences).")
-@click.option('--persona', required=True, help="Persona name (folder under apps/ or persona YAML path).")
-@click.option('--input', 'user_input', required=True, help="User input prompt/question for the persona.")
-@click.option('--preferences', multiple=True, help="Preferences as key=value pairs (repeatable).")
+# ------------------------
+@cli.command("run", help="Run a persona on user input and preferences.")
+@click.option('--persona', required=True, help="Persona name (folder or path to YAML).")
+@click.option('--input', 'user_input', required=True, help="User input prompt/question.")
+@click.option('--preferences', multiple=True, help="Preferences as key=value (repeatable).")
 @click.option('--stream', is_flag=True, help="Stream output word-by-word.")
 @click.pass_context
 def run(ctx, persona, user_input, preferences, stream):
@@ -117,13 +114,13 @@ def run(ctx, persona, user_input, preferences, stream):
         }
         try:
             if stream:
-                resp = requests.post(f"{API_URL}/stream", json=payload, stream=True)
+                resp = requests.post(f"{ctx.obj['api_url']}/stream", json=payload, stream=True)
                 resp.raise_for_status()
                 for chunk in resp.iter_content(chunk_size=32):
                     click.echo(chunk.decode("utf-8"), nl=False)
                 click.echo()
             else:
-                resp = requests.post(f"{API_URL}/output", json=payload)
+                resp = requests.post(f"{ctx.obj['api_url']}/output", json=payload)
                 resp.raise_for_status()
                 click.secho(resp.json().get("output", ""), fg="green")
         except Exception as e:
@@ -156,10 +153,11 @@ def run(ctx, persona, user_input, preferences, stream):
         except Exception as e:
             click.secho(f"Error: {e}", fg="red")
 
-@cli.command("run-json", help="(API mode only) Run a persona and return JSON structured output.")
+# ------------------------
+@cli.command("run-json", help="(API only) Run persona, get JSON-structured output.")
 @click.option('--persona', required=True, help="Persona name.")
 @click.option('--input', 'user_input', required=True, help="User input prompt.")
-@click.option('--preferences', multiple=True, help="Preferences as key=value pairs (repeatable).")
+@click.option('--preferences', multiple=True, help="Preferences as key=value (repeatable).")
 @click.pass_context
 def run_json(ctx, persona, user_input, preferences):
     if ctx.obj["mode"] != "api":
@@ -172,7 +170,7 @@ def run_json(ctx, persona, user_input, preferences):
         "preferences": prefs
     }
     try:
-        resp = requests.post(f"{API_URL}/output/json", json=payload)
+        resp = requests.post(f"{ctx.obj['api_url']}/output/json", json=payload)
         resp.raise_for_status()
         data = resp.json()
         click.secho("\nPlain Output:", fg="green")
@@ -184,14 +182,15 @@ def run_json(ctx, persona, user_input, preferences):
     except Exception as e:
         click.secho(f"API run-json failed: {e}", fg="red")
 
-@cli.command("llm-info", help="Show LLM provider/model config from the API.")
+# ------------------------
+@cli.command("llm-info", help="Show LLM provider/model config (API only).")
 @click.pass_context
 def llm_info(ctx):
     if ctx.obj["mode"] != "api":
         click.secho("llm-info is only available in API mode.", fg="yellow")
         return
     try:
-        resp = requests.get(f"{API_URL}/llm/info")
+        resp = requests.get(f"{ctx.obj['api_url']}/llm/info")
         resp.raise_for_status()
         data = resp.json()
         click.secho("\nLLM Info:", fg="cyan")
@@ -200,14 +199,15 @@ def llm_info(ctx):
     except Exception as e:
         click.secho(f"Failed to fetch LLM info: {e}", fg="red")
 
-@cli.command("llm-health", help="Check LLM server health (API mode only).")
+# ------------------------
+@cli.command("llm-health", help="Check LLM server health (API only).")
 @click.pass_context
 def llm_health(ctx):
     if ctx.obj["mode"] != "api":
         click.secho("llm-health is only available in API mode.", fg="yellow")
         return
     try:
-        resp = requests.get(f"{API_URL}/llm/health")
+        resp = requests.get(f"{ctx.obj['api_url']}/llm/health")
         resp.raise_for_status()
         data = resp.json()
         healthy = data.get("healthy", False)
@@ -218,14 +218,15 @@ def llm_health(ctx):
     except Exception as e:
         click.secho(f"Failed to fetch LLM health: {e}", fg="red")
 
-@cli.command("status", help="Show RASA API server status (API mode only).")
+# ------------------------
+@cli.command("status", help="Show API server status (API only).")
 @click.pass_context
 def status(ctx):
     if ctx.obj["mode"] != "api":
         click.secho("status is only available in API mode.", fg="yellow")
         return
     try:
-        resp = requests.get(f"{API_URL}/status")
+        resp = requests.get(f"{ctx.obj['api_url']}/status")
         resp.raise_for_status()
         data = resp.json()
         click.secho("\nRASA API Server Status:", fg="cyan")
@@ -234,5 +235,6 @@ def status(ctx):
     except Exception as e:
         click.secho(f"Failed to fetch API status: {e}", fg="red")
 
+# ------------------------
 if __name__ == "__main__":
     cli()
