@@ -42,20 +42,58 @@ metadata:
 
 ```mermaid
 flowchart TD
-    A[User Input / Preferences] --> B(Persona Loader)
-    B --> C(Runner)
-    C --> D1(Stateless Frame)
-    C --> D2(Session Frame)
-    C --> D3(Short Term Frame)
-    C --> D4(Long Term Frame)
+    %% Define color styles based on the provided green palette
+    classDef input fill:#f0f8f3,stroke:#5b8772,stroke-width:2px,color:#2d4339
+    classDef loader fill:#e0efe8,stroke:#5b8772,stroke-width:2px,color:#2d4339
+    classDef runner fill:#d0e6dd,stroke:#5b8772,stroke-width:2px,color:#2d4339
+    classDef frames fill:#c1ded3,stroke:#5b8772,stroke-width:2px,color:#2d4339
+    classDef operators fill:#a1c9b9,stroke:#5b8772,stroke-width:2px,color:#2d4339
+    classDef llm fill:#81b59f,stroke:#5b8772,stroke-width:2px,color:#2d4339
+    classDef output fill:#e0efe8,stroke:#5b8772,stroke-width:2px,color:#2d4339
+    classDef hitl fill:#5b8772,stroke:#2d4339,stroke-width:2px,color:#f0f8f3,font-weight:bold
+    
+    %% Core components with simplified flow
+    A[User Input / Preferences]
+    B(Persona Loader)
+    C(Runner)
+    D1(Stateless Frame)
+    D2(Session Frame)
+    D3(Short Term Frame)
+    D4(Long Term Frame)
+    E(Operators Layer)
+    F(LLM Adapter)
+    G[Output Stream / API / CLI]
+    H[User, Feedback/HITL]
+    
+    %% Flow connections
+    A --> B
+    B --> C
+    C --> D1
+    C --> D2
+    C --> D3
+    C --> D4
     D1 --> E
     D2 --> E
     D3 --> E
     D4 --> E
-    E(Operators Layer) --> F(LLM Adapter)
-    F --> G[Output Stream / API / CLI]
-    G --> H[User, Feedback/HITL]
+    E --> F
+    F --> G
+    G --> H
     H -.-> B
+    
+    %% Apply classes
+    class A input
+    class B loader
+    class C runner
+    class D1,D2,D3,D4 frames
+    class E operators
+    class F llm
+    class G output
+    class H hitl
+    
+    %% Link styling
+    linkStyle default stroke:#88888855,stroke-width:1.5px
+    linkStyle 12 stroke:#5b8772,stroke-width:1.5px,stroke-dasharray: 3 3
 ```
 
 **Explanation:**
