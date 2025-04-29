@@ -1,5 +1,35 @@
 # 📦 CHANGELOG
 
+## v0.1.2 – Public Release + Framework Introduction (2025-04-29)
+
+### 🌐 Public Launch
+
+- Published official Medium article: “RASA – A Cognitive Framework for Agentic Memory in AI Systems”
+- Released audio companion overview via NotebookLM
+- Launched GitHub repo publicly with core implementation and docs
+
+### 🧠 Conceptual Foundation
+
+- Formalized the RASA architecture: Frames, Operators, Persona
+- Refined messaging and language across README and public materials
+- Defined RASA as a cognitive framework for building modular, memory-aware, role-aligned agents
+
+### 🧭 Repository Enhancements
+
+- Added detailed `README.md` aligned with article
+- Linked Medium + audio narrative from GitHub and documentation
+- Added changelog history and tagged `v0.1.2` as initial public release
+
+---
+
+### 🧭 Next Up
+
+- Expand persona execution flows
+- Add deeper LLM operator integration and role-driven reasoning
+- Introduce memory persistence with Redis and ChromaDB
+
+
+
 ## v0.1.1 – API, Client CLI, and Robust Test Coverage (2025-04-21)
 
 ### ✨ Highlights
