@@ -62,3 +62,6 @@ notes/*
 apps/demo_app
 apps/demo_app/*
 
+# Claude Code
+CLAUDE.md
+.claude/

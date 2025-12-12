@@ -1,162 +1,202 @@
 # RASA – Role-Aligned Software Architecture
 
-**Persona-Driven, Memory-Integrated AI Framework for Next-Gen AI Agents**
+[![CI](https://github.com/vedanta/rasa/actions/workflows/ci.yml/badge.svg)](https://github.com/vedanta/rasa/actions/workflows/ci.yml)
+[![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
----
+**Build persona-driven, memory-aware AI agents with declarative YAML configuration.**
 
-## 🚀 What is RASA?
+RASA is a modular Python framework for creating AI agents with distinct personalities, multi-layered memory, and domain-specific reasoning. Define your agent's behavior in YAML, and access it via API, CLI, or Python.
 
-RASA is a modular Python framework for building advanced, persona-driven, memory-aware AI agents.  
-It empowers teams to create agents with unique "personality" and reasoning flows, multi-layered memory, and domain-specific intelligence—operationalized as APIs, command-line tools, or direct Python modules.
+## Key Features
 
-- **Persona-based:** Rich agent personas defined in YAML—each with frames (cognitive layers), operators (reasoning steps), and metadata.
-- **Memory-integrated:** First-class support for stateless, short-term, session, and long-term memory (e.g. Redis, vector DB).
-- **Extensible:** Plug in new personas, frames, operators, tools, or LLMs with minimal code.
-- **Multi-interface:** Access RASA via FastAPI server, CLI, or import as a Python library.
+| Feature | Description |
+|---------|-------------|
+| **Persona-Driven** | Define agent personality, tone, and behavior in YAML |
+| **Memory Layers** | Stateless, short-term, session, and long-term memory support |
+| **Cognitive Frames** | Chain reasoning steps with composable frame classes |
+| **Multiple LLMs** | Ollama, OpenAI, and Claude adapters included |
+| **Flexible Access** | FastAPI server, CLI tool, or direct Python import |
 
----
+## Quick Start
 
-## 📁 Project Structure
-
-```
-rasa/
-  core/           # Core logic: runners, memory, agent base classes
-  api/            # FastAPI app (main entrypoint)
-  frames/         # Built-in cognitive frame classes
-  operators/      # Built-in operator modules/tools
-  llm/            # LLM adapters and config [see ./rasa/llm/LLM_CONFIG.md]
-clients/
-  rasa.py         # Unified CLI (local+API mode)
-  README.md       # CLI usage and tips
-apps/
-  <persona>/      # Each persona in its own folder
-    persona.yaml
-    frames/
-    operators/
-  README.md       # Persona/app usage guide
-  PERSONA.md      # Persona YAML schema/standards
-tests/
-  ...             # Pytest suite for API, CLI, core, personas
-README.md         # (You are here - project onboarding!)
-ARCHITECTURE.md   # System architecture and extensibility
-CHANGELOG.md      # Version history and changes
-```
-
----
-
-## ⚡ Quick Start for Users & Developers
-
-### 1. **Clone the repo**
+### Installation
 
 ```bash
 git clone https://github.com/vedanta/rasa
 cd rasa
-```
 
-### 2. **Set up a Conda Environment (Recommended for All Platforms)**
+# Option 1: Using make (recommended)
+make install
 
-```bash
+# Option 2: Manual
 conda create -n rasa python=3.10
 conda activate rasa
-pip install -r requirements.txt
-# (Optional, recommended for devs)
 pip install -e .
 ```
 
-### 3. **Run the API Server**
+### Configuration
 
 ```bash
-uvicorn rasa.api.main:app --reload
+cp .env.example .env
+# Edit .env with your LLM settings (Ollama runs locally by default)
 ```
 
-- Runs at http://localhost:8000 by default.
-- Explore docs at http://localhost:8000/docs
-
-### 4. **Try the CLI**
+### Run the Server
 
 ```bash
+make serve
+# Or: uvicorn rasa.api.main:app --reload
+```
+
+API available at http://localhost:8000 | Docs at http://localhost:8000/docs
+
+### Try the CLI
+
+```bash
+# List available personas
 python -m clients.rasa list
-python -m clients.rasa run --persona travel_concierge --input "Suggest a scenic European trip"
+
+# Run a persona
+python -m clients.rasa run --persona travel_concierge --input "Plan a weekend in Tokyo"
+
+# Stream output
+python -m clients.rasa run --persona travel_concierge --input "Best cafes in Paris" --stream
 ```
 
-- See full CLI help: `python -m clients.rasa --help`
-- To run against the API:  
-  `python -m clients.rasa --mode api run --persona travel_concierge --input "Ideas for a weekend in Japan"`
+## Example Persona
 
----
+Personas are defined in `apps/<name>/persona.yaml`:
 
-## 👤 Adding Personas
+```yaml
+name: travel_concierge
+description: Personalized travel advice and recommendations
+frames:
+  - stateless_frame
+  - session_frame
+  - short_term_frame
+operators:
+  - preference_agent
+  - tone_formatter
+prompt_style: narrative
+metadata:
+  tone: friendly
+  domain: travel
+  traits: ["curious", "helpful"]
+```
 
-1. **Create a new folder:**
-   ```
-   apps/my_persona/
-   ```
-2. **Write a `persona.yaml`:**
-   See `apps/PERSONA.md` for the full schema/spec.
-3. **(Optional) Add custom frames/operators** under `frames/` and `operators/` for persona/domain logic.
-4. **Test via CLI or API:**
-   - `python -m clients.rasa run --persona my_persona --input "Test prompt"`
+## API Usage
 
----
+```bash
+# Plain text response
+curl -X POST http://localhost:8000/output \
+  -H "Content-Type: application/json" \
+  -d '{"persona": "travel_concierge", "input": "Suggest a beach destination"}'
 
-## 🧪 Testing
+# Structured JSON response
+curl -X POST http://localhost:8000/output/json \
+  -H "Content-Type: application/json" \
+  -d '{"persona": "travel_concierge", "input": "Top 3 European cities"}'
 
-- **API:**  
-  `pytest tests/test_api_master.py -s`
-- **CLI:**  
-  `pytest tests/test_cli_end_to_end.py -s`
-- **All:**  
-  `pytest`
+# Streaming response
+curl -X POST http://localhost:8000/stream \
+  -H "Content-Type: application/json" \
+  -d '{"persona": "travel_concierge", "input": "Describe Italian cuisine"}'
+```
 
-All major endpoints and flows are covered with rich debug output.
+## Python Usage
 
----
+```python
+from rasa.core.persona import Persona
+from rasa.core.runner import Runner
 
-## 🛠️ Advanced Usage
+persona = Persona.from_yaml("apps/travel_concierge/persona.yaml")
+runner = Runner(persona)
 
-- **Streaming responses:**  
-  Use `--stream` in CLI or `/stream` API endpoint.
-- **Preferences:**  
-  Pass `--preferences key=value` in CLI (repeatable) or in API payload.
-- **Get structured JSON:**  
-  Use `run-json` in API mode or `/output/json` endpoint.
+result = runner.run({
+    "input": "Recommend a hiking trip",
+    "preferences": {"difficulty": "moderate"}
+})
+print(result["output"])
+```
 
----
+## Architecture
 
-## 🔗 Key Documents & Resources
+```
+User Input → API/CLI → Persona Loader → Runner → Frames → Operators → LLM → Output
+```
 
-- [ARCHITECTURE.md](./ARCHITECTURE.md) — Detailed architecture and flow diagrams
-- [PERSONA_DESIGN.md](./PERSONA_DESIGN.md) - Walkthrough deepdive of how personas are designed
-- [./clients/README.md](./clients/README.md) — CLI usage and switches
-- [./apps/PERSONA](./apps/PERSONA.md) — Persona YAML schema and examples
-- [./apps/README.md](./apps/README.md) — Persona/app design, best practices
-- [./rasa/llm/LLM_CONFIG.md](./rasa/llm/LLM_CONFIG.md) — LLM config and adapters
-- [CHANGELOG.md](./CHANGELOG.md) — Version history and recent changes
+| Component | Purpose |
+|-----------|---------|
+| **Persona** | YAML config defining agent behavior |
+| **Frame** | Cognitive processing step (memory layer) |
+| **Operator** | Reasoning/transformation module |
+| **Runner** | Orchestrates execution flow |
 
----
+See [ARCHITECTURE.md](./ARCHITECTURE.md) for detailed diagrams and extension points.
 
-## 🛡️ Troubleshooting
+## Project Structure
 
-- **ModuleNotFoundError / import issues:**  
-  Ensure you have `__init__.py` in `rasa/`, `rasa/core/`, `clients/`.
-  Run from the project root.
-- **API not responding:**  
-  Start with `uvicorn rasa.api.main:app --reload` and check port.
-- **Persona not found:**  
-  Confirm `apps/<persona>/persona.yaml` exists and is valid YAML.
-- **LLM/backend errors:**  
-  Check `llm.py`, try `/llm/health` or `/status` endpoints.
+```
+rasa/
+  api/            # FastAPI server
+  core/           # Runner, Persona, State, Agent
+  frames/         # Built-in frames (stateless, session, short_term, long_term)
+  operators/      # Built-in operators (preference, critic, heuristic, tone)
+  llm/            # LLM adapters (Ollama, OpenAI, Claude)
+  config/         # Settings and env loading
+clients/
+  rasa.py         # CLI tool
+apps/
+  <persona>/      # Persona definitions
+    persona.yaml
+    frames/       # Custom frames
+    operators/    # Custom operators
+tests/            # Test suite
+```
 
----
+## Development
 
-## 🤝 Contributing
+```bash
+make dev          # Install with dev dependencies
+make test         # Run all tests
+make test-api     # Run API tests
+make test-cli     # Run CLI tests
+make lint         # Check code style
+make format       # Auto-format code
+```
 
-- Fork, clone, and PR your features or fixes!
-- Add new personas, frames, or operators following the standard structure.
-- Write tests for all new logic—see `tests/`.
-- Document YAML fields and code for onboarding.
+## Documentation
 
----
+| Document | Description |
+|----------|-------------|
+| [ARCHITECTURE.md](./ARCHITECTURE.md) | System design and flow diagrams |
+| [PERSONA_DESIGN.md](./PERSONA_DESIGN.md) | Deep dive into persona design |
+| [apps/Persona.md](./apps/Persona.md) | Persona YAML specification |
+| [clients/README.md](./clients/README.md) | CLI reference |
+| [rasa/llm/LLM_CONFIG.md](./rasa/llm/LLM_CONFIG.md) | LLM configuration guide |
+| [CONTRIBUTING.md](./CONTRIBUTING.md) | Contribution guidelines |
+| [CHANGELOG.md](./CHANGELOG.md) | Version history |
 
-**RASA lets you build and operate real-world, context-aware, persona-aligned AI agents in your domain.  
-Get started, explore, and make it your own!**
+## Troubleshooting
+
+| Issue | Solution |
+|-------|----------|
+| `ModuleNotFoundError` | Run from project root; ensure `__init__.py` files exist |
+| API not responding | Check server is running on correct port |
+| Persona not found | Verify `apps/<persona>/persona.yaml` exists |
+| LLM errors | Check `.env` config; use `/llm/health` endpoint |
+
+## Contributing
+
+We welcome contributions! See [CONTRIBUTING.md](./CONTRIBUTING.md) for guidelines.
+
+```bash
+make dev              # Setup dev environment
+pre-commit install    # Enable pre-commit hooks
+make test             # Verify tests pass
+```
+
+## License
+
+MIT License - see [LICENSE](./LICENSE) for details.
