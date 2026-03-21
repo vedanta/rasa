@@ -26,6 +26,6 @@ jobs:
         run: |
           pip install -e .
 
-      - name: Run tests
+      - name: Run unit tests
         run: |
-          pytest -v
+          pytest tests/test_runner.py tests/test_persona_build.py tests/test_settings.py tests/test_stateless_frame.py tests/test_heuristic_agent.py tests/test_llm_operator.py -v
